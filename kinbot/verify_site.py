@@ -1,11 +1,11 @@
 import requests
+import asyncio
 from time import sleep
 
 from .web_driver import WebDriver
 
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
-
 
 class VerifySite():
     """"""
@@ -20,14 +20,14 @@ class VerifySite():
         self.user_name:str = user_name
         self.user_passwd:str = user_passwd
         
-    def finalize_driver(self, driver):
+    async def finalize_driver(self, driver):
         try:
             driver.close()
             driver.quit()
         except:
             print('>>> [ERROR]: Não foi possível finalizar o driver atual.')
 
-    def set_verify_time(self):
+    async def set_verify_time(self):
         print('\n>>> A página será verifica a cada 15 minutos')
         print('>>> Se deseja alterar esse valor digite o tempo desejado em minutos')
         print('>>> Caso contrário prescione `Enter` para continuar: ')
@@ -42,7 +42,7 @@ class VerifySite():
 
         print(f'>>> Tudo certo o tempo de verificação é de: {self.verify_time} minutos!\n')
         
-    def login_site(self, driver):
+    async def login_site(self, driver):
         """
         Reliza o login no plataforma, retorna o driver com os novos valores
         """
@@ -61,7 +61,7 @@ class VerifySite():
         
         return driver
 
-    def verify_site(self):
+    async def verify_site(self):
         """
         Verifica se o site está online e realiza login
         """
@@ -75,10 +75,10 @@ class VerifySite():
         print('\n>>> Status Code: ', r.status_code)
 
         # Login
-        driver = self.login_site(driver)
-        sleep(2)
+        driver = await self.login_site(driver)
+        await asyncio.sleep(2)
         if driver.current_url != self.urls['calendario']:
-            self.finalize_driver(driver)
+            await self.finalize_driver(driver)
             return data
 
         driver.close()
@@ -89,19 +89,16 @@ class VerifySite():
         # self.finalize_driver(driver)
         return data
     
-    def action_site(self):
+    async def action_site(self):
         # Iniciar o driver
         driver = WebDriver().driver
         data = {'response': False, 'title': ''}
 
-        driver = self.login_site(driver)
-        sleep(3)
+        driver = await self.login_site(driver)
+        await asyncio.sleep(3)
         
-        # Clicar em Toggle (Expandir menu)
-        driver.find_element(By.CSS_SELECTOR, 'a[class="sidebar-toggle"]').click()
-        # Clicar em <li><a>Propostas</a></li>
-        driver.find_element(By.CSS_SELECTOR, 'a[href="https://app.kinsol.com.br/admin/board"]').click()
-        sleep(5)
+        driver.get('https://app.kinsol.com.br/admin/board')
+        await asyncio.sleep(5)
         # Capturar todos os cards da tela de proposta
         try:
             cards = driver.find_elements(By.CSS_SELECTOR, 'article[class="card"]')
@@ -133,7 +130,7 @@ class VerifySite():
             print('>>> [ERROR]:', error)
             return False
 
-    def score_site(self):
+    async def score_site(self):
         """
         Pega os valores presentes no cabeçalho da tabela de propostas
         """
@@ -141,10 +138,10 @@ class VerifySite():
         driver = WebDriver().driver
         score_list = []
 
-        driver = self.login_site(driver)
-        sleep(2)
+        driver = await self.login_site(driver)
+        await asyncio.sleep(2)
         driver.get(self.urls['propostas'])
-        sleep(8)
+        await asyncio.sleep(8)
         headers = driver.find_elements(By.CSS_SELECTOR, 'section[class="list"] > header')
         
         for header in headers:

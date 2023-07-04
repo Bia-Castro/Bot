@@ -17,7 +17,7 @@ class KinBot():
     KinBot
     """
     PASSWD_ACCESS = 'kinsol@0106'
-    TOKEN = '6251978006:AAGeTPZuLrFTNg3BpZ_mcIjaCsqpvFFXg0Y'
+    TOKEN = '5840284976:AAE0pGUW3v79DZtZ6cKiGlum83k4b5VwqPs' #'6251978006:AAGeTPZuLrFTNg3BpZ_mcIjaCsqpvFFXg0Y'
     application = None
     monitor_flag = False
     task = None
@@ -79,7 +79,7 @@ class KinBot():
         
         while self.monitor_flag:
             driver = VerifySite(**self.verify_settings)
-            result = driver.verify_site()
+            result = await driver.verify_site()
             status_code = result['status_code']
             login_success = 'Login realizado com sucesso 🟢' if result['login_success'] else 'Erro ao realizar login ❌'
 
@@ -131,7 +131,7 @@ class KinBot():
         
         await update.message.reply_text('Realizando interação com o site...')
         driver = VerifySite(**self.verify_settings)
-        result = driver.action_site()
+        result = await driver.action_site()
         if not result['response']:
             print('>>> [INFO]: Não foi possível realizar a interação!')
             await update.message.reply_text('❌ Não foi possível realizar a interação...')
@@ -151,7 +151,7 @@ class KinBot():
         await update.message.reply_text('Filtrando score...')
         
         driver = VerifySite(**self.verify_settings)
-        score_list = driver.score_site()
+        score_list = await driver.score_site()
         
         if not len(score_list):
             print('>>> [INFO]: nenhum score localizado.')
