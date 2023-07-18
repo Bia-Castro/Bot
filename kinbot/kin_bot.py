@@ -139,6 +139,10 @@ class KinBot():
         
         print(f'>>> [INFO]: Interaçaõ realizada com sucesso!\nitem verificado: {result["title"]}.')
         await update.message.reply_text(f'Interaçaõ realizada com sucesso!\nitem verificado: {result["title"]}.')
+        if not result['passed']:
+            await update.message.reply_text('❌ A atividade não foi inserida com sucesso!')
+        else:
+            await update.message.reply_text('✅ A atividade foi inserida com sucesso!')
         return
     
     async def crm_score(self, update, context) -> None:
