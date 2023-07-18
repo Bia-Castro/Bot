@@ -94,7 +94,7 @@ class VerifySite():
     async def action_site(self):
         # Iniciar o driver
         driver = WebDriver().driver
-        data = {'response': False, 'title': ''}
+        data = {'response': False, 'title': '', 'passed': False}
 
         driver = await self.login_site(driver)
         driver.set_window_size(1920, 1080)
@@ -123,15 +123,27 @@ class VerifySite():
                 title = driver.find_element(By.CSS_SELECTOR, 'h3[class="page-title"]')
                 data['response'] = True
                 data['title'] = title.text
+                
                 select_element = driver.find_elements(By.NAME, 'activity_type_id')[0]
                 select = Select(select_element)
                 select.select_by_value('14')
-                driver.find_element(By.ID, 'exampleInputDescription').send_keys('Testes KinBot')
+                
+                driver.find_elements(By.CSS_SELECTOR, 'textarea[name="description"]')[0]\
+                    .send_keys('Testes KinBot')
+                
                 select_element = driver.find_elements(By.NAME, 'responsible_user_id')[0]
                 select = Select(select_element)
                 select.select_by_value('19331')
+                
                 driver.find_elements(By.CSS_SELECTOR, 'button[class="btn btn-success pull-right"]')[1].click()
-                input()
+                await asyncio.sleep(6)
+                
+                ul = driver.find_elements(By.CSS_SELECTOR, 'ul[class="timeline"]')[0]
+                first_li_text = ul.find_elements(By.TAG_NAME, 'li')[0].text
+                
+                if 'Amanhã' in first_li_text and 'Testes KinBot' in first_li_text:
+                    data['passed'] = True
+                
             except NoSuchElementException as error:
                 print('>>> [ERROR]: Não consegui selecionar o card.')
                 print('>>> [ERROR]: ', error)
