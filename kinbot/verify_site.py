@@ -6,6 +6,8 @@ from .web_driver import WebDriver
 
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver import Keys
+from selenium.webdriver.support.select import Select
 
 class VerifySite():
     """"""
@@ -95,12 +97,17 @@ class VerifySite():
         data = {'response': False, 'title': ''}
 
         driver = await self.login_site(driver)
+        driver.set_window_size(1920, 1080)
         await asyncio.sleep(3)
         
         driver.get('https://app.kinsol.com.br/admin/board')
         await asyncio.sleep(5)
+        
         # Capturar todos os cards da tela de proposta
         try:
+            input_pesquisa = driver.find_element(By.CSS_SELECTOR, 'input[placeholder="Código Proposta ou Nome Cliente"]')
+            input_pesquisa.send_keys('teste', Keys.ENTER)
+            await asyncio.sleep(5)
             cards = driver.find_elements(By.CSS_SELECTOR, 'article[class="card"]')
 
             if not cards:
@@ -110,11 +117,21 @@ class VerifySite():
             try:
                 driver.execute_script("arguments[0].click();", cards[0])
                 driver.switch_to.window(driver.window_handles[1])
+                await asyncio.sleep(5)
                 
                 # Achar o título
                 title = driver.find_element(By.CSS_SELECTOR, 'h3[class="page-title"]')
                 data['response'] = True
                 data['title'] = title.text
+                select_element = driver.find_elements(By.NAME, 'activity_type_id')[0]
+                select = Select(select_element)
+                select.select_by_value('14')
+                driver.find_element(By.ID, 'exampleInputDescription').send_keys('Testes KinBot')
+                select_element = driver.find_elements(By.NAME, 'responsible_user_id')[0]
+                select = Select(select_element)
+                select.select_by_value('19331')
+                driver.find_elements(By.CSS_SELECTOR, 'button[class="btn btn-success pull-right"]')[1].click()
+                input()
             except NoSuchElementException as error:
                 print('>>> [ERROR]: Não consegui selecionar o card.')
                 print('>>> [ERROR]: ', error)
