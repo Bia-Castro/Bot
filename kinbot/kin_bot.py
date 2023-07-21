@@ -132,6 +132,8 @@ class KinBot():
         await update.message.reply_text('Realizando interação com o site...')
         driver = VerifySite(**self.verify_settings)
         result = await driver.action_site()
+        
+        print(result)
         if not result['response']:
             print('>>> [INFO]: Não foi possível realizar a interação!')
             await update.message.reply_text('❌ Não foi possível realizar a interação...')

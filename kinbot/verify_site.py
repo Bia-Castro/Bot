@@ -12,9 +12,9 @@ from selenium.webdriver.support.select import Select
 class VerifySite():
     """"""
     urls = {
-        'login': 'https://app.kinsol.com.br',
-        'calendario': 'https://app.kinsol.com.br/admin/calendar?user=me',
-        'propostas': 'https://app.kinsol.com.br/admin/board'
+        'login': 'https://app-lab.kinsol.com.br',
+        'calendario': 'https://app-lab.kinsol.com.br/admin/calendar?user=me',
+        'propostas': 'https://app-lab.kinsol.com.br/admin/board'
     }
     
     def __init__(self, verify_time: float, user_name: str, user_passwd: str):
@@ -100,14 +100,14 @@ class VerifySite():
         driver.set_window_size(1920, 1080)
         await asyncio.sleep(3)
         
-        driver.get('https://app.kinsol.com.br/admin/board')
+        driver.get('https://app-lab.kinsol.com.br/admin/board')
         await asyncio.sleep(5)
         
         # Capturar todos os cards da tela de proposta
         try:
             input_pesquisa = driver.find_element(By.CSS_SELECTOR, 'input[placeholder="Código Proposta ou Nome Cliente"]')
             input_pesquisa.send_keys('teste', Keys.ENTER)
-            await asyncio.sleep(5)
+            await asyncio.sleep(8)
             cards = driver.find_elements(By.CSS_SELECTOR, 'article[class="card"]')
 
             if not cards:
@@ -133,13 +133,14 @@ class VerifySite():
                 
                 select_element = driver.find_elements(By.NAME, 'responsible_user_id')[0]
                 select = Select(select_element)
-                select.select_by_value('19331')
+                select.select_by_value('14663')
                 
                 driver.find_elements(By.CSS_SELECTOR, 'button[class="btn btn-success pull-right"]')[1].click()
-                await asyncio.sleep(6)
+                await asyncio.sleep(12)
                 
                 ul = driver.find_elements(By.CSS_SELECTOR, 'ul[class="timeline"]')[0]
                 first_li_text = ul.find_elements(By.TAG_NAME, 'li')[0].text
+                print(first_li_text)
                 
                 if 'Amanhã' in first_li_text and 'Testes KinBot' in first_li_text:
                     data['passed'] = True
@@ -147,7 +148,6 @@ class VerifySite():
             except NoSuchElementException as error:
                 print('>>> [ERROR]: Não consegui selecionar o card.')
                 print('>>> [ERROR]: ', error)
-                return data
             
             self.finalize_driver(driver)
             
@@ -157,7 +157,7 @@ class VerifySite():
             self.finalize_driver(driver)
             print('>>> [ERROR]: Nenhum card de propósta foi localizado!')
             print('>>> [ERROR]:', error)
-            return False
+            return data
 
     async def score_site(self):
         """
