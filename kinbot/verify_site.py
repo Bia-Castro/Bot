@@ -184,3 +184,7 @@ class VerifySite():
         driver.quit()
 
         return score_list
+    
+    async def calendar(self):
+        # Iniciar o driver
+        driver = WebDriver().driver

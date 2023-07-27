@@ -21,7 +21,7 @@ class KinBot():
     application = None
     monitor_flag = False
     task = None
-    LOGIN = range(1)
+    CALENDAR, CALENDAR_USUARIO = range(2)
     user_list = []
     verify_settings = {
         'user_name': 'kinsol.servidor@gmail.com',
@@ -168,6 +168,35 @@ class KinBot():
         
         print('>>> [INFO]: Lista de Leads por etapas:\n', str_score)
         await update.message.reply_text(f'📊Lista de Leads por etapas:\n{str_score}')
+    
+    async def calendar(self, update: Update, context):
+
+        # if not await self.user_is_authenticated(update):
+        #     return
+        
+        await update.message.reply_text('Deseja listar a agenda de hoje ou de amanhã?\n[/h /a]')
+        return self.CALENDAR
+        
+    async def get_option_calendar(self, update: Update, context): 
+        option = update.message.text
+        if not option in ['/h', '/a']:
+            await update.message.reply_text('Opção inválida!')
+            return
+        
+        return self.CALENDAR_USUARIO
+
+    async def get_usuario_calendar(self, update: Update, context):
+        await update.message.reply_text('Digite o ID do usuário')
+        usuario = await update.message.text
+        if not usuario in ['/h', '/a']:
+            await update.message.reply_text('Opção inválida!')
+            return
+
+        return ConversationHandler.END
+    
+    async def cancel_get_calendar(self, update: Update, context) -> int:
+        await update.message.reply_text('Operação cancelado')
+        return ConversationHandler.END
         
     def start_kin(self):
         self.application = Application.builder().token(self.TOKEN).build()
@@ -180,16 +209,23 @@ class KinBot():
         self.application.add_handler(CommandHandler('action', self.action))
         self.application.add_handler(CommandHandler('crm_score', self.crm_score))
 
-        conv_handler = ConversationHandler(
-            entry_points=[CommandHandler('login', self.login)],
-            states={
-                self.LOGIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.get_passwd)]
-            },
-            fallbacks=[CommandHandler('cancel', self.cancel_get_passwd)]
-        )
-
         # adicionar o ConversationHandler ao updater
-        self.application.add_handler(conv_handler)
+        # self.application.add_handler(ConversationHandler(
+        #     entry_points=[CommandHandler('login', self.login)],
+        #     states={
+        #         self.LOGIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.get_passwd)]
+        #     },
+        #     fallbacks=[CommandHandler('cancel', self.cancel_get_passwd)]
+        # ))
+        
+        self.application.add_handler(ConversationHandler(
+            entry_points=[CommandHandler('calendar', self.calendar)],
+            states={
+                self.CALENDAR: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.get_option_calendar)],
+                self.CALENDAR_USUARIO: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.get_usuario_calendar)]
+            },
+            fallbacks=[CommandHandler('cancel', self.cancel_get_calendar)]
+        ))
 
         # Run the bot until the user presses Ctrl-C
         self.application.run_polling()
