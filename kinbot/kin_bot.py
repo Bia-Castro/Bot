@@ -17,7 +17,7 @@ class KinBot():
     KinBot
     """
     PASSWD_ACCESS = 'kinsol@0106'
-    TOKEN = '5960331687:AAGKEq6Psw3XsBa6nswouVZcQ1_I-mzssRM' #'6251978006:AAGeTPZuLrFTNg3BpZ_mcIjaCsqpvFFXg0Y'
+    TOKEN = '5840284976:AAE0pGUW3v79DZtZ6cKiGlum83k4b5VwqPs' #'6251978006:AAGeTPZuLrFTNg3BpZ_mcIjaCsqpvFFXg0Y'
     application = None
     monitor_flag = False
     task = None
@@ -175,6 +175,9 @@ class KinBot():
         
         await update.message.reply_text('Deseja listar a agenda de hoje ou de amanhã?\n[h ou a]')
         return self.CALENDAR
+    
+        # driver = VerifySite(**self.verify_settings)
+        # result = await driver.calendar_site()
         
     async def get_option_calendar(self, update: Update, context) -> None:
         op = update.message.text.lower()
@@ -189,7 +192,7 @@ class KinBot():
         return ConversationHandler.END
     
     async def cancel_get_calendar(self, update: Update, context) -> int:
-        await update.message.reply_text('Operação cancelado')
+        await update.message.reply_text('Operação cancelada')
         return ConversationHandler.END
         
     def start_kin(self):
