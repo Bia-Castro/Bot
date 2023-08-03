@@ -174,10 +174,11 @@ class KinBot():
             return
         
         await update.message.reply_text('Deseja listar a agenda de hoje ou de amanhã?\n[h ou a]')
-        return self.CALENDAR
     
-        # driver = VerifySite(**self.verify_settings)
-        # result = await driver.calendar_site()
+        driver = VerifySite(**self.verify_settings)
+        result = driver.calendar_site()
+        
+        return self.CALENDAR
         
     async def get_option_calendar(self, update: Update, context) -> None:
         op = update.message.text.lower()

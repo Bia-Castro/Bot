@@ -1,5 +1,6 @@
 import requests
 import asyncio
+import datetime
 from time import sleep
 
 from .web_driver import WebDriver
@@ -185,48 +186,72 @@ class VerifySite():
 
         return score_list
     
-    async def calendar_site(self):
+    async def calendar_site(self, option):
         # Iniciar o driver
         driver = WebDriver().driver
-        data = {'response': False, 'events': []}
-
-        driver = await self.login_site(driver)
-        driver.set_window_size(1980)
+        data = {'response': False, 'title': ''}
+        
+        driver = self.login_site(driver)
         await asyncio.sleep(3)
         
         driver.get('https://app-lab.kinsol.com.br/admin/calendar?')
-        await asyncio.sleep(5)
+        await asyncio.sleep(10)
+
+        try:
+            result = driver.calendar_site(op)
+        except:
+            return
+
+        if option == 'h':
+            calendar_date = datetime.date.today()
+        elif option == 'a':
+            calendar_date = datetime.date.today() + datetime.timedelta(days=1)
+        else:
+            ValueError("Opção inválida! Deve ser 'h' para hoje ou 'a' para amanhã.")
         
-    #     try:
-    #         calendar_url = self.urls['calendario'] + f'&date={calendar_url}'
-    #         driver.get(calendar_url)
-    #         await asyncio.sleep(5)
+        try:
+            calendar_url = self.urls['calendario'] + f'&date={calendar_url}'
+            driver.get(calendar_url)
+            await asyncio.sleep(5)
 
-    #         events = driver.find_elements(By.CSS_SELECTOR, 'div[class="event"]')
+            events = driver.find_elements(By.CSS_SELECTOR, 'div[class="event"]')
 
-    #         if not events:
-    #             return data
+            if not events:
+                return data
+        
+            try:
+                select_element = driver.find_elements(By.CLASS_NAME, 'class="vue-treeselect__input"')[0]
+                select = Select(select_element)
+                select.select_by_value('14663')
+                
+                driver.find_elements(By.CSS_SELECTOR, 'button[class="btn btn-default active"]')[1].click()
+                await asyncio.sleep(12)
 
-    #         try:
-    #             driver.find_elements(By.CSS_SELECTOR, 'button[class="btn btn-default active"]')[1].click()
-    #             await asyncio.sleep(12)
+                title = driver.find_element(By.CSS_SELECTOR, '[class="vue-treeselect__input"]')
+                data['option'] = True
+                data['title'] = title.text
                 
-    #             title = driver.find_element(By.CSS_SELECTOR, '[class="vue-treeselect__input"]')
-    #             data['option'] = True
-    #             data['title'] = title.text
+                driver.find_elements(By.CSS_SELECTOR, 'button[class="fc-today-button fc-button fc-button-primary"]')[1].click()
+                await asyncio.sleep(3)
+
+                driver.find_elements(By.CSS_SELECTOR, 'button[class="fc-daygrid-day-frame fc-scrollgrid-sync-inner"]')[1].click()
+                await asyncio.sleep(5)
                 
-    #             driver.find_elements(By.CSS_SELECTOR, 'button[class="fc-today-button fc-button fc-button-primary"]')[1].click()
-    #             await asyncio.sleep(3)   
-    
-    #             driver.find_elements(By.CSS_SELECTOR, 'button[class="fc-daygrid-day-frame fc-scrollgrid-sync-inner"]')[1].click()
-    #             await asyncio.sleep(5)
+                driver.find_elements(By.CSS_SELECTOR, 'button[class="fc-next-button fc-button fc-button-primary"]')[1].click()
+                await asyncio.sleep(3)
                 
-    #             driver.find_elements(By.CSS_SELECTOR, 'button[class="fc-next-button fc-button fc-button-primary"]')[1].click()
-    #             await asyncio.sleep(3) 
-                
-    #             ul = driver.find_elements(By.CSS_SELECTOR, 'ul[class="timeline"]')[0]
-    #             first_li_text = ul.find_elements(By.TAG_NAME, 'li')[0].text
-    #             print(first_li_text)
-                
-    #             if 'Amanhã' in first_li_text and 'Testes KinBot' in first_li_text:
-    #                 data['usuario'] = True
+                ul = driver.find_elements(By.CSS_SELECTOR, 'ul[class="timeline"]')[0]
+                first_li_text = ul.find_elements(By.TAG_NAME, 'li')[0].text
+                print(first_li_text)
+
+                if 'Amanhã' in first_li_text and 'Testes KinBot' in first_li_text:
+                    data['usuario'] = True
+            
+            except:
+                print('Error')
+        
+        except:
+            print('Error')
+        
+        driver.get(self.urls['calendario'] + f'date={calendar_date.strftime("%Y-%m-%d")}')
+        await asyncio.sleep(30)
