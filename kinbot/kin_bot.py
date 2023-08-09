@@ -2,6 +2,7 @@ import logging
 import asyncio
 
 from .verify_site import VerifySite
+from .extracao_agenda import obter_agenda_usuario
 
 from telegram import ForceReply, Update
 from telegram.ext import Application, CommandHandler, ContextTypes, Updater, MessageHandler, filters, ConversationHandler
@@ -174,9 +175,6 @@ class KinBot():
             return
         
         await update.message.reply_text('Deseja listar a agenda de hoje ou de amanhã?\n[h ou a]')
-    
-        driver = VerifySite(**self.verify_settings)
-        result = driver.calendar_site()
         
         return self.CALENDAR
         
@@ -190,12 +188,45 @@ class KinBot():
 
     async def get_usuario_calendar(self, update: Update, context):
         await update.message.reply_text('Vamos iniciar!')
+                
+        usuario = 'Fernanda Mendes Macedo Oliveira ( Engenharia - Projetos )'
+        option = 'a'
+
+        await update.message.reply_text(f'Verificando a agenda de {usuario} ...')
+        await update.message.reply_text(f'⏳   Verificando...   ⏳')
+        agenda = obter_agenda_usuario(usuario, option)
+
+        try:
+            print(agenda)
+
+            for evento in agenda:
+                id = evento[0]
+                data = evento[1]
+                status = evento[2]
+                concluido_em = evento[3]
+                Tipo_de_Atividade = evento[4]
+                Responsavel = evento[5]
+                Criado_por = evento[6]
+                cliente = evento[7]
+
+                evento_menu = (  
+                                f"🔑 {id}          🕑 {status}    \n"
+                                f"🌞 Cliente: {cliente}\n"
+                                f"🗓️ Data: {data}\n"
+                                f"🚨 {Tipo_de_Atividade}\n\n"
+                                f"👤 Criado por: {Criado_por}\n\n"
+                                f"🗣️ Responsável: {Responsavel}\n\n"
+                                )
+                await update.message.reply_text(evento_menu)
+                
+        except Exception as error: print('>>> [ERROR]:', error)
+
         return ConversationHandler.END
     
     async def cancel_get_calendar(self, update: Update, context) -> int:
         await update.message.reply_text('Operação cancelada')
         return ConversationHandler.END
-        
+    
     def start_kin(self):
         self.application = Application.builder().token(self.TOKEN).build()
 
