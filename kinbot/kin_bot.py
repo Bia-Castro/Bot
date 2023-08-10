@@ -1,43 +1,45 @@
 import logging
 import asyncio
-
-from .verify_site import VerifySite
-from .extracao_agenda import obter_agenda_usuario
-
 from telegram import ForceReply, Update
 from telegram.ext import Application, CommandHandler, ContextTypes, Updater, MessageHandler, filters, ConversationHandler
+from .verify_site import VerifySite
+
+from .extracao_agenda import obter_agenda_usuario
+from .verificar_id_crm import obter_lista_usuario
 
 # Enable logging
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
+
 logger = logging.getLogger(__name__)
 
 class KinBot():
     """
-    KinBot
+        KinBot - Bot do Telegram 
     """
-    PASSWD_ACCESS = 'kinsol@0106'
-    TOKEN = '5840284976:AAE0pGUW3v79DZtZ6cKiGlum83k4b5VwqPs' #'6251978006:AAGeTPZuLrFTNg3BpZ_mcIjaCsqpvFFXg0Y'
+    
+    ### TOKEN EDITADO ##### 
+    # TOKEN = '6530582523:AAF-nZl5q9Ws8JKrqLaGpngGfQ1sfF-8KyA' # @kinsolengenhariabot
+    TOKEN = '5840284976:AAE0pGUW3v79DZtZ6cKiGlum83k4b5VwqPs' # @botbia
     application = None
     monitor_flag = False
     task = None
-    LOGIN, CALENDAR, CALENDAR_USUARIO = range(3)
+    LOGIN, CALENDAR, CALENDAR_USUARIO , GET_EMAIL = range(4)
     user_list = []
+
+    crm_list = [
+                ['18321', 'Brena Fernanda (Executiva de Engenharia)'],
+                ['817', 'Antonio Mateus (Beto) (Engenharia)'],
+                ['812',  'Fernanda Mendes Macedo Oliveira ( Engenharia - Projetos )']
+    ]
+
     verify_settings = {
         'user_name': 'kinsol.servidor@gmail.com',
         'user_passwd': 'kinsolbot10',
         'verify_time': 15,
     }
-    
-    async def user_is_authenticated(self, update: Update) -> bool:
-        user_id = update.message.from_user.id
-        is_authenticated = user_id in self.user_list
-        if not is_authenticated:
-            await update.message.reply_text('Você deve realizar a autenticação\nDigite: /login.')
-            
-        return is_authenticated
-    
+
     async def start(self, update: Update, context) -> None:
         """Send a message when the command /start is issued."""
         user = update.message.from_user
@@ -45,24 +47,7 @@ class KinBot():
         
         if not await self.user_is_authenticated(update):
             return
-        
-    async def login(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-        """Autenticar/Logar usuário"""
-        await update.message.reply_text('Por favor, envie a senha:\nPara cancelar o login digite: /cancel.')
-        return self.LOGIN
-        
-    async def get_passwd(self, update: Update, context) -> int: 
-        passwd = update.message.text
-        if passwd != self.PASSWD_ACCESS:
-            await update.message.reply_text("Senha incorreta.")
-            return
-        
-        user_id = update.message.from_user.id
-        self.user_list.append(user_id)
-        await update.message.reply_text("Usuário autenticado com sucesso.")
 
-        return ConversationHandler.END
-    
     async def cancel_get_passwd(self, update: Update, context) -> int:
         await update.message.reply_text('Login cancelado.')
         return ConversationHandler.END
@@ -149,8 +134,6 @@ class KinBot():
         return
     
     async def crm_score(self, update, context) -> None:
-        """
-        """
         if not await self.user_is_authenticated(update):
             return
 
@@ -170,35 +153,107 @@ class KinBot():
         print('>>> [INFO]: Lista de Leads por etapas:\n', str_score)
         await update.message.reply_text(f'📊Lista de Leads por etapas:\n{str_score}')
     
+    async def user_is_authenticated(self, update: Update) -> bool:
+        user_id = update.message.from_user.id
+        is_authenticated = user_id in self.user_list
+        if not is_authenticated:
+            await update.message.reply_text('Você deve realizar a autenticação\nDigite: /login.')
+            
+        return is_authenticated
+    
+    ### CALENDARIO ### 
+    async def login(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+        """Autenticar/Logar usuário"""
+        await update.message.reply_text('Por favor, envie o seu ID de usuário:\nPara cancelar o login digite: /cancel.')
+        return self.LOGIN
+        
+    ## substitui o /login em vez de pedir senha, pede o ID do usuário do CRM
+    async def get_id_usuario(self, update: Update, context) -> int:
+            id_usuario_crm = update.message.text
+            await update.message.reply_text('🔎 Realizando a autenticação de usuário\.\.\.',parse_mode='MarkdownV2')
+            try:
+                """ ORIGINAL """
+                # authenticated_user = obter_lista_usuario(id_usuario_crm)
+
+                """PARA TESTES"""
+                authenticated_user = 'Fernanda Mendes Macedo Oliveira ( Engenharia - Projetos )'
+
+            except Exception as error:
+                authenticated_user = None
+                print('>>> ERROR: ', error)
+
+            if authenticated_user is None:
+                await update.message.reply_text("❌  *Falha na autenticação*\!\nDesculpe, não foi possível localizar o ID inserido, verifique e tente novamente\.\.\.",parse_mode='MarkdownV2')
+                return
+
+            user_id = update.message.from_user.id
+            self.user_list.append(user_id)
+
+            await update.message.reply_text(f"✅  Usuário autenticado com sucesso!\n\n👤 {authenticated_user}")
+            context.user_data['authenticated_user'] = authenticated_user
+            
+            ## extra ?? listar ferramentas disponíveis 
+            await update.message.reply_text(f'\n\n🗓️ Para verificar a *agenda* digite: \n\n 📆/calendar',parse_mode='MarkdownV2')
+
+            return ConversationHandler.END
+    
     async def calendar(self, update: Update, context):
         if not await self.user_is_authenticated(update):
             return
-        
+    
         await update.message.reply_text('Deseja listar a agenda de hoje ou de amanhã?\n[h ou a]')
-        
-        return self.CALENDAR
-        
+    
+        return self.CALENDAR_USUARIO  # Redireciona para o próximo estágio da conversa
+    
     async def get_option_calendar(self, update: Update, context) -> None:
         op = update.message.text.lower()
         if op not in ['h', 'a']:
             await update.message.reply_text('Opção inválida!')
             return ConversationHandler.END
+        # Aqui você pode continuar o processamento do resultado, se necessário
+        
+        # Armazene a opção do calendário no contexto
+        context.user_data['calendar_option'] = op
 
         return self.CALENDAR_USUARIO
-
+    
     async def get_usuario_calendar(self, update: Update, context):
-        await update.message.reply_text('Vamos iniciar!')
-                
-        usuario = 'Fernanda Mendes Macedo Oliveira ( Engenharia - Projetos )'
-        option = 'a'
 
-        await update.message.reply_text(f'Verificando a agenda de {usuario} ...')
-        await update.message.reply_text(f'⏳   Verificando...   ⏳')
+        def obter_icone_status(status):
+                if status == "No prazo":
+                    icone = '🟢'
+                elif status == "Atraso":
+                    icone = '🔴'
+                elif status == 'Futuro':
+                    icone = '⚪'
+                return icone
+        
+        op = update.message.text.lower()
+        context.user_data['calendar_option'] = op
+        if op not in ['h', 'a']:
+            await update.message.reply_text('❌ *Opção inválida!\*',parse_mode='MarkdownV2')
+            return ConversationHandler.END
+        
+        await update.message.reply_text('🚀     *Vamos iniciar\!*',parse_mode='MarkdownV2')
+
+        usuario = context.user_data.get('authenticated_user')
+        option = context.user_data.get('calendar_option')
+        if option == 'h':
+            day = 'de hoje'
+        elif option == 'a':
+            day = 'de amanhã'
+        await update.message.reply_text(f'🔎   Verificando a agenda {day} de {usuario} ...')
+        await update.message.reply_text(f'⏳   Verificando\.\.\.   ⏳',parse_mode='MarkdownV2')
+        
         agenda = obter_agenda_usuario(usuario, option)
-
+        # imprimir agenda para verificação de vetor
+        print(f'>>> AGENDA: {agenda}')
         try:
-            print(agenda)
-
+            if agenda == []:
+                await update.message.reply_text('📆✅  *Nenhum evento encontrado na agenda\!*',parse_mode='MarkdownV2')
+            no_prazo = []
+            atraso = []
+            futuro = []
             for evento in agenda:
                 id = evento[0]
                 data = evento[1]
@@ -209,18 +264,55 @@ class KinBot():
                 Criado_por = evento[6]
                 cliente = evento[7]
 
-                evento_menu = (  
-                                f"🔑 {id}          🕑 {status}    \n"
-                                f"🌞 Cliente: {cliente}\n"
-                                f"🗓️ Data: {data}\n"
-                                f"🚨 {Tipo_de_Atividade}\n\n"
-                                f"👤 Criado por: {Criado_por}\n\n"
-                                f"🗣️ Responsável: {Responsavel}\n\n"
-                                )
-                await update.message.reply_text(evento_menu)
+                # aplicar "semáfaro" '⚪🟢🔴' no status da atividade
+                icone_status = obter_icone_status(status)
+                def substituir_caracteres(texto):
+                    try:
+                        texto = texto.replace('-', '\-')
+                        texto = texto.replace('.', '\.')
+                        texto = texto.replace('(', '\(')
+                        texto = texto.replace(')', '\)')
+                    except Exception as error: print(error)
+                    return texto 
                 
-        except Exception as error: print('>>> [ERROR]:', error)
+                Tipo_de_Atividade = substituir_caracteres(Tipo_de_Atividade)
+                cliente = substituir_caracteres(cliente)
+                Criado_por = substituir_caracteres(Criado_por)
 
+                evento_menu = (  
+                                f"🚨    *{Tipo_de_Atividade}* \n" 
+                                f"🆔    *{id}*              {icone_status} *{status}* \n\n"
+                                f"🌞 *Cliente:* {cliente}\n\n"
+
+                                f"🗣️ *Criado por:* {Criado_por}\n\n"
+                                # f"👤 Responsável: {Responsavel}\n\n"
+                                f"🗓️ *Data:* {data}      \n"
+                                # f"✔️ Concluído em: {concluido_em}\n\n"
+                                
+                                )
+                # await update.message.reply_text(evento_menu, parse_mode='MarkdownV2')
+                
+                if status == 'No prazo':
+                    no_prazo.append(evento_menu)
+                elif status == 'Atraso':
+                    atraso.append(evento_menu)
+                elif status == 'Futuro':
+                    futuro.append(evento_menu)
+
+            # Atraso
+            for evento_menu in atraso:
+                await update.message.reply_text(evento_menu, parse_mode='MarkdownV2')  
+
+            # No prazo
+            for evento_menu in no_prazo:
+                await update.message.reply_text(evento_menu, parse_mode='MarkdownV2')
+            
+            # Futuro
+            for evento_menu in futuro:
+                await update.message.reply_text(evento_menu, parse_mode='MarkdownV2')   
+   
+        except Exception as error: print('>>> [ERROR]:', error)
+     
         return ConversationHandler.END
     
     async def cancel_get_calendar(self, update: Update, context) -> int:
@@ -241,7 +333,7 @@ class KinBot():
         conv_handler = ConversationHandler(
             entry_points=[CommandHandler('calendar', self.calendar), CommandHandler('login', self.login)],
             states={
-                self.LOGIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.get_passwd)],
+                self.LOGIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.get_id_usuario)],
                 self.CALENDAR: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.get_option_calendar)],
                 self.CALENDAR_USUARIO: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.get_usuario_calendar)]
             },

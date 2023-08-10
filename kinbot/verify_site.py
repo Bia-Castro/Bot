@@ -374,7 +374,7 @@ class VerifySite():
 
         return score_list
     
-     # Defina os estados da conversa como constantes
+    # Defina os estados da conversa como constantes
     
     async def calendar_site(self, option):
         # Iniciar o driver
